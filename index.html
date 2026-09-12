@@ -1,0 +1,657 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>小安健康日曆</title>
+<style>
+:root{
+  --bg:#f4f5f7;--ink:#202124;--muted:#667085;--line:#dfe3e8;
+  --vomit:#ffedd5;--vomit-ink:#b9380a;--food:#eee9ff;--food-ink:#6b21a8;
+  --weight:#dbeafe;--weight-ink:#1d4ed8;--vet:#ef4444;--vet-ink:#ffffff;
+  --med:#f472b6;--med-ink:#500724;--deworm:#a7f3d0;--deworm-ink:#065f46;
+  --litter:#fde68a;--litter-ink:#713f12;--other:#e5e7eb;--other-ink:#4b5563
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"PingFang TC",sans-serif;color:var(--ink)}
+.wrap{max-width:920px;margin:auto;padding:14px 8px 80px}
+.top{position:sticky;top:0;background:rgba(244,245,247,.97);backdrop-filter:blur(12px);z-index:10;padding-bottom:8px}
+h1{font-size:28px;margin:6px 2px 8px}
+.nav,.filters,.toolbar{display:flex;gap:7px;overflow-x:auto;padding:5px 0}
+.nav button,.filters button,.toolbar button{white-space:nowrap;border:0;border-radius:999px;padding:9px 12px;background:#fff;color:#111827;font-weight:800;font-size:14px}
+.filters button.active,.nav button.active{outline:2px solid #111827}
+.vomit{background:var(--vomit)!important;color:var(--vomit-ink)!important}
+.food{background:var(--food)!important;color:var(--food-ink)!important}
+.weight{background:var(--weight)!important;color:var(--weight-ink)!important}
+.vet{background:var(--vet)!important;color:var(--vet-ink)!important}
+.med{background:var(--med)!important;color:var(--med-ink)!important}
+.deworm{background:var(--deworm)!important;color:var(--deworm-ink)!important}
+.litter{background:var(--litter)!important;color:var(--litter-ink)!important}
+.other{background:var(--other)!important;color:var(--other-ink)!important}
+.month{margin:14px 0 30px;scroll-margin-top:185px}
+.month h2{font-size:22px;margin:8px 2px}
+.weekdays,.grid{display:grid;grid-template-columns:repeat(7,1fr)}
+.grid{grid-auto-rows:minmax(118px,auto)}
+.weekdays div{text-align:center;color:var(--muted);font-size:14px;padding:8px 0;font-weight:700}
+.day{min-height:118px;background:#fff;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:4px;overflow:hidden;cursor:pointer}
+.day:nth-child(7n+1){border-left:1px solid var(--line)}
+.day:nth-child(-n+7){border-top:1px solid var(--line)}
+.blank{background:#fafafa;cursor:default}
+.date{font-size:14px;font-weight:800;margin-bottom:4px;pointer-events:none}
+.sun .date{color:#dc2626}.sat .date{color:#2563eb}
+.today-cell{box-shadow:inset 0 0 0 2px #111827}
+.event{display:block;border-radius:8px;padding:5px;margin:4px 0;font-size:12px;line-height:1.3;overflow:hidden;cursor:pointer}
+.etitle{display:block;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.detail{display:none}
+.hidden-by-filter{display:none!important}
+.panel{background:#fff;border-radius:15px;padding:14px;margin:16px 0}
+.panel h3{margin:0 0 10px}
+.weights{display:flex;gap:10px;overflow-x:auto;align-items:flex-end;height:155px;border-bottom:1px solid var(--line)}
+.witem{min-width:62px;text-align:center}.wbar{width:30px;margin:auto;background:#cbd5e1;border-radius:7px 7px 0 0}
+.wval{font-size:12px;font-weight:800}.wdate{font-size:11px;color:var(--muted);margin-top:4px}
+.sheetwrap{position:fixed;inset:0;background:rgba(0,0,0,.38);display:none;align-items:flex-end;z-index:50}
+.sheet{background:#fff;width:100%;max-width:920px;margin:auto;border-radius:20px 20px 0 0;padding:18px;max-height:92vh;overflow:auto}
+.sheet h2{margin:0 0 12px}
+.field{margin:10px 0}
+.fieldlabel{display:block;font-size:14px;color:var(--muted);font-weight:800;margin-bottom:5px}
+input,select,textarea{width:100%;font:inherit;font-size:16px;border:1px solid #d1d5db;border-radius:12px;padding:12px;background:#fff}
+textarea{min-height:84px}
+input[type="color"]{height:48px;padding:4px}
+.actions{display:flex;gap:8px;margin-top:12px}
+.actions button{flex:1;border:0;border-radius:12px;padding:11px;font-weight:800;font-size:15px}
+.primary{background:#111827;color:#fff}.danger{background:#fee2e2;color:#991b1b}.secondary{background:#eef0f3;color:#111827}
+.note{font-size:12px;color:var(--muted);line-height:1.5}
+.cloud-status{font-size:12px;color:var(--muted);padding:2px 2px 4px;font-weight:700}
+.record-meta{font-size:12px;color:var(--muted);line-height:1.6;margin-top:10px}
+.custom-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #eee}
+.custom-dot{width:24px;height:24px;border-radius:50%;display:inline-block;flex:0 0 auto}
+.custom-row strong{flex:1}
+.cat-name-edit{flex:1;min-width:0;padding:9px 10px;font-size:15px}
+.custom-row input[type="color"]{width:48px;flex:0 0 48px}
+.custom-row button{border:0;border-radius:9px;padding:8px 10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>小安健康日曆</h1>
+    <div class="toolbar">
+      <button id="todayBtn">今天</button>
+      <button id="manageBtn">＋新增項目</button>
+      <button id="backupBtn">備份／匯出</button>
+      <button id="authBtn">管理登入</button>
+    </div>
+    <div class="cloud-status" id="cloudStatus">雲端：連線中…</div>
+    <div class="cloud-status" id="modeStatus">模式：唯讀</div>
+    <div class="nav" id="monthNav"></div>
+    <div class="filters" id="filters">
+      <button data-filter="all" class="active">全部</button>
+      <button data-filter="vomit" class="vomit">嘔吐</button>
+      <button data-filter="food" class="food">飲食</button>
+      <button data-filter="weight" class="weight">體重</button>
+      <button data-filter="vet" class="vet">VET</button>
+      <button data-filter="deworm" class="deworm">點藥</button>
+      <button data-filter="med" class="med">吃藥</button>
+      <button data-filter="litter" class="litter">貓砂</button>
+      <button data-filter="other" class="other">其他</button>
+    </div>
+  </div>
+
+  <div id="calendar"></div>
+  <div class="panel"><h3>體重趨勢</h3><div class="weights" id="weights"></div></div>
+</div>
+
+<div class="sheetwrap" id="editWrap">
+  <div class="sheet">
+    <h2 id="editHeading">新增紀錄</h2>
+    <div class="field"><label class="fieldlabel">日期</label><input type="date" id="dateInput"></div>
+    <div class="field"><label class="fieldlabel">分類</label><select id="catInput">
+      <option value="vomit">嘔吐</option><option value="food">飲食</option><option value="weight">體重</option>
+      <option value="vet">VET / 看獸醫</option><option value="deworm">點藥</option>
+      <option value="med">吃藥 / 口服藥</option><option value="litter">貓砂</option><option value="other">其他</option>
+    </select></div>
+    <div class="field"><label class="fieldlabel">簡短記事</label><input id="titleInput" placeholder="例如：黃水一灘"></div>
+    <div class="field"><label class="fieldlabel">詳細說明</label><textarea id="detailInput"></textarea></div>
+    <div class="record-meta" id="recordMeta"></div>
+    <div class="actions">
+      <button class="danger" id="deleteBtn" style="display:none">刪除</button>
+      <button class="secondary" id="cancelEdit">取消</button>
+      <button class="primary" id="saveBtn">儲存</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheetwrap" id="deleteWrap">
+  <div class="sheet">
+    <h2>確定刪除這筆紀錄？</h2>
+    <div class="field">
+      <div id="deleteSummary" style="font-size:17px;line-height:1.65;font-weight:600"></div>
+    </div>
+    <p class="note">刪除後會從日曆與匯出資料中移除。</p>
+    <div class="actions">
+      <button class="secondary" id="deleteCancel">取消</button>
+      <button class="danger" id="deleteConfirm">確定刪除</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheetwrap" id="viewWrap">
+  <div class="sheet">
+    <h2 id="viewTitle"></h2>
+    <div class="field"><div id="viewDate" class="fieldlabel"></div><div id="viewDetail" style="font-size:17px;line-height:1.65;font-weight:600"></div></div>
+    <div class="actions"><button class="primary" id="viewClose">關閉</button></div>
+  </div>
+</div>
+
+<div class="sheetwrap" id="manageWrap">
+  <div class="sheet">
+    <h2>項目設定</h2>
+    <div id="customList"></div>
+    <div class="field"><label class="fieldlabel">新增項目名稱</label><input id="newCatName" placeholder="例如：抓癢、便便"></div>
+    <div class="field"><label class="fieldlabel">顏色</label><input type="color" id="newCatColor" value="#fde68a"></div>
+    <div class="actions"><button class="secondary" id="manageClose">關閉</button><button class="primary" id="newCatSave">新增項目</button></div>
+  </div>
+</div>
+
+<div class="sheetwrap" id="authWrap">
+  <div class="sheet">
+    <h2 id="authHeading">管理者登入</h2>
+    <div id="loginFields">
+      <div class="field"><label class="fieldlabel">Email</label><input type="email" id="loginEmail" autocomplete="username" placeholder="管理者 Email"></div>
+      <div class="field"><label class="fieldlabel">密碼</label><input type="password" id="loginPassword" autocomplete="current-password" placeholder="管理者密碼"></div>
+      <p class="note">只有管理者登入後才能新增、修改與刪除雲端紀錄。家人或獸醫不需登入即可查看。</p>
+    </div>
+    <div class="actions">
+      <button class="secondary" id="authClose">關閉</button>
+      <button class="primary" id="loginBtn">登入</button>
+      <button class="danger" id="logoutBtn" style="display:none">登出管理模式</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheetwrap" id="backupWrap">
+  <div class="sheet">
+    <h2>備份／匯出</h2>
+    <div class="note">程式版本：v13 雲端管理測試版</div>
+    <div class="actions"><button id="exportJson">JSON 完整備份</button><button id="exportCsv">CSV 匯出</button></div>
+    <div class="field"><label class="fieldlabel">還原 JSON 備份</label><input type="file" id="importJson" accept=".json,application/json"></div>
+    <p class="note">JSON 會備份自行新增的紀錄與自訂項目。CSV 可用 Excel 或 Google 試算表開啟。</p>
+    <div class="actions"><button class="primary" id="backupClose">關閉</button></div>
+  </div>
+</div>
+
+<script>
+const seed=[{"date":"2026-05-15","category":"other","title":"帶小安回家","detail":""},{"date":"2026-05-15","category":"food","title":"開始吃 K36","detail":""},{"date":"2026-05-22","category":"food","title":"飼糧倉 少量","detail":""},{"date":"2026-05-23","category":"weight","title":"3.1 kg","detail":""},{"date":"2026-05-23","category":"deworm","title":"點藥","detail":"驅蟲滴劑。"},{"date":"2026-05-23","category":"vomit","title":"嘔吐 3 團","detail":"一早發現嘔吐物；其中一大團是未消化的飼料，後來有吐水，有點懶。"},{"date":"2026-05-31","category":"weight","title":"3.1 kg","detail":""},{"date":"2026-05-31","category":"vomit","title":"嘔吐 1 灘","detail":"一早發現，稠狀。"},{"date":"2026-06-07","category":"vomit","title":"嘔吐 1 灘","detail":"一早發現，黃水。"},{"date":"2026-06-14","category":"vomit","title":"嘔吐 1 灘","detail":"傍晚發現，黃水較少。"},{"date":"2026-06-19","category":"food","title":"鮮食罐頭 少量","detail":"給 1 點點鮮食罐頭。"},{"date":"2026-06-20","category":"weight","title":"3.2 kg","detail":""},{"date":"2026-06-20","category":"food","title":"鮮食罐頭","detail":"給剩下的鮮食罐頭。"},{"date":"2026-06-21","category":"deworm","title":"點藥","detail":"驅蟲滴劑。"},{"date":"2026-07-07","category":"litter","title":"換貓砂","detail":""},{"date":"2026-07-16","category":"vomit","title":"嘔吐","detail":"下班回家後看到；黃色半固體、魚腥味，含毛條。"},{"date":"2026-07-17","category":"litter","title":"補砂","detail":""},{"date":"2026-07-21","category":"vomit","title":"嘔吐","detail":"下班回家後看到，未消化的完整飼料。"},{"date":"2026-07-22","category":"other","title":"一聲咳嗽","detail":""},{"date":"2026-07-24","category":"deworm","title":"點藥","detail":"驅蟲滴劑。"},{"date":"2026-08-02","category":"other","title":"一聲咳嗽","detail":""},{"date":"2026-08-05","category":"vomit","title":"吐小灘","detail":"回家看到；黃稠。原記事日期旁有「？」。"},{"date":"2026-08-07","category":"litter","title":"換貓砂","detail":""},{"date":"2026-08-09","category":"weight","title":"3.2 kg","detail":""},{"date":"2026-08-10","category":"vomit","title":"吐小灘","detail":"回家看到；黃稠。"},{"date":"2026-08-15","category":"vet","title":"早上 VET","detail":""},{"date":"2026-08-15","category":"vomit","title":"吐小灘","detail":""},{"date":"2026-08-15","category":"food","title":"晚上換皇家 S33","detail":""},{"date":"2026-08-16","category":"vomit","title":"吐小灘","detail":"深土色稠狀，有毛。"},{"date":"2026-08-18","category":"vomit","title":"吐小灘","detail":""},{"date":"2026-08-19","category":"litter","title":"補貓砂","detail":""},{"date":"2026-08-20","category":"vomit","title":"吐 2 小灘","detail":"深土色 ×1；口水 ×2。"},{"date":"2026-08-23","category":"vomit","title":"吐 2 小灘","detail":"深土色 ×2；口水 ×2。"},{"date":"2026-08-24","category":"deworm","title":"點藥","detail":"驅蟲滴劑。"},{"date":"2026-08-25","category":"vomit","title":"吐小灘、口水 ×2","detail":"白天吃飼料不到 1/2。"},{"date":"2026-08-25","category":"food","title":"晚上吃 1/2 罐","detail":"喵探長香菇雞罐。"},{"date":"2026-08-27","category":"vet","title":"下午 VET","detail":""},{"date":"2026-08-27","category":"food","title":"吃 GIDR31","detail":""},{"date":"2026-08-27","category":"food","title":"首次肉泥","detail":""},{"date":"2026-08-27","category":"med","title":"吃藥","detail":"口服藥。"}];
+const KEY="xiaoan-hybrid-v9";
+const CATKEY="xiaoan_custom_categories_v1";
+const CATSETKEY="xiaoan_builtin_category_settings_v1";
+const VERSION=3;
+const SUPABASE_URL="https://tijftbuvuhhvmioyhvuu.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY="sb_publishable_5jRCm7LfHB5IJbnuvNFWIg_LvDExnej";
+const SESSIONKEY="xiaoan_supabase_admin_session_v1";
+
+let extra=[];
+let cloudRecords=[];
+let customCats=[];
+let builtinSettings={};
+let adminSession=null;
+let editingSource=null;
+try{ extra=JSON.parse(localStorage.getItem(KEY))||[]; }catch(e){ extra=[]; }
+try{ customCats=JSON.parse(localStorage.getItem(CATKEY))||[]; }catch(e){ customCats=[]; }
+try{ builtinSettings=JSON.parse(localStorage.getItem(CATSETKEY))||{}; }catch(e){ builtinSettings={}; }
+try{ adminSession=JSON.parse(localStorage.getItem(SESSIONKEY))||null; }catch(e){ adminSession=null; }
+
+const baseNames={vomit:"嘔吐",food:"飲食",weight:"體重",vet:"VET",deworm:"點藥",med:"吃藥",litter:"貓砂",other:"其他"};
+const baseColors={vomit:"#ffedd5",food:"#eee9ff",weight:"#dbeafe",vet:"#ef4444",deworm:"#a7f3d0",med:"#f472b6",litter:"#fde68a",other:"#e5e7eb"};
+const selectedFilters=new Set();
+let editingId=null;
+
+const $=id=>document.getElementById(id);
+function pad(n){return String(n).padStart(2,"0")}
+function ymd(d){return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`}
+function monthKey(d){return `${d.getFullYear()}-${pad(d.getMonth()+1)}`}
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function parseMonth(s){const [y,m]=s.split("-").map(Number);return new Date(y,m-1,1)}
+function addMonths(d,n){return new Date(d.getFullYear(),d.getMonth()+n,1)}
+function catColor(id){
+  const c=customCats.find(x=>x.id===id);
+  if(c)return c.color;
+  if(baseNames[id])return builtinSettings[id]?.color||baseColors[id];
+  return null;
+}
+function catName(id){
+  const c=customCats.find(x=>x.id===id);
+  if(c)return c.name;
+  if(baseNames[id])return builtinSettings[id]?.name||baseNames[id];
+  return id;
+}
+function persist(){
+  localStorage.setItem(KEY,JSON.stringify(extra));
+  localStorage.setItem(CATKEY,JSON.stringify(customCats));
+  localStorage.setItem(CATSETKEY,JSON.stringify(builtinSettings));
+}
+
+
+function isAdmin(){return !!(adminSession&&adminSession.access_token)}
+function saveSession(){
+  if(adminSession)localStorage.setItem(SESSIONKEY,JSON.stringify(adminSession));
+  else localStorage.removeItem(SESSIONKEY);
+}
+function updateAdminUI(){
+  const on=isAdmin();
+  $("authBtn").textContent=on?"管理者已登入":"管理登入";
+  $("modeStatus").textContent=on?"模式：管理者｜可新增・修改・刪除":"模式：唯讀｜家人／獸醫可直接查看";
+  $("manageBtn").style.display=on?"":"none";
+}
+async function refreshSession(){
+  if(!adminSession?.refresh_token)throw new Error("no refresh token");
+  const res=await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`,{
+    method:"POST",headers:{apikey:SUPABASE_PUBLISHABLE_KEY,"Content-Type":"application/json"},
+    body:JSON.stringify({refresh_token:adminSession.refresh_token})
+  });
+  if(!res.ok)throw new Error("refresh failed");
+  const x=await res.json();
+  adminSession={...x,expires_at:Date.now()+((x.expires_in||3600)*1000)};saveSession();updateAdminUI();return adminSession.access_token;
+}
+async function getAccessToken(){
+  if(!adminSession?.access_token)throw new Error("not signed in");
+  if(!adminSession.expires_at || Date.now()<adminSession.expires_at-60000)return adminSession.access_token;
+  return await refreshSession();
+}
+async function cloudWrite(method,path,body){
+  const token=await getAccessToken();
+  const headers={apikey:SUPABASE_PUBLISHABLE_KEY,Authorization:`Bearer ${token}`,"Content-Type":"application/json",Prefer:"return=representation"};
+  const res=await fetch(`${SUPABASE_URL}/rest/v1/${path}`,{method,headers,body:body===undefined?undefined:JSON.stringify(body)});
+  if(res.status===401){await refreshSession();return cloudWrite(method,path,body);}
+  if(!res.ok){const txt=await res.text();throw new Error(`${res.status} ${txt}`);}
+  const txt=await res.text();return txt?JSON.parse(txt):null;
+}
+
+function getRange(){
+  const today=new Date();
+  const allDates=[...seed,...extra,...cloudRecords].map(r=>r.date).filter(Boolean).sort();
+  const first=allDates.length?parseMonth(allDates[0].slice(0,7)):new Date(today.getFullYear(),today.getMonth(),1);
+  const lastData=allDates.length?parseMonth(allDates[allDates.length-1].slice(0,7)):first;
+  const current=new Date(today.getFullYear(),today.getMonth(),1);
+  let end=addMonths(current,12);
+  if(lastData>end)end=addMonths(lastData,3);
+  return {first,end};
+}
+
+function renderCalendar(){
+  const cal=$("calendar"), nav=$("monthNav");
+  cal.innerHTML=""; nav.innerHTML="";
+  const {first,end}=getRange();
+  const todayStr=ymd(new Date());
+
+  for(let d=new Date(first); d<=end; d=addMonths(d,1)){
+    const key=monthKey(d);
+    const navBtn=document.createElement("button");
+    navBtn.textContent=`${d.getMonth()+1}月`;
+    navBtn.dataset.month=key;
+    navBtn.onclick=()=>document.getElementById("m-"+key)?.scrollIntoView({behavior:"smooth",block:"start"});
+    nav.appendChild(navBtn);
+
+    const sec=document.createElement("section");
+    sec.className="month"; sec.id="m-"+key;
+    sec.innerHTML=`<h2>${d.getFullYear()} 年 ${d.getMonth()+1} 月</h2>
+      <div class="weekdays"><div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div></div>
+      <div class="grid"></div>`;
+    const grid=sec.querySelector(".grid");
+    const firstDow=new Date(d.getFullYear(),d.getMonth(),1).getDay();
+    const days=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
+    for(let i=0;i<firstDow;i++){const b=document.createElement("div");b.className="day blank";grid.appendChild(b);}
+    for(let day=1;day<=days;day++){
+      const dt=new Date(d.getFullYear(),d.getMonth(),day);
+      const ds=ymd(dt);
+      const cell=document.createElement("div");
+      cell.className="day"+(dt.getDay()===0?" sun":dt.getDay()===6?" sat":"")+(ds===todayStr?" today-cell":"");
+      cell.dataset.date=ds;
+      cell.innerHTML=`<div class="date">${day}</div>`;
+      cell.addEventListener("click",e=>{
+        if(e.target.closest(".event"))return;
+        openNew(ds);
+      });
+      grid.appendChild(cell);
+    }
+    cal.appendChild(sec);
+  }
+
+  renderEvents();
+  updateMonthActive();
+}
+
+function renderEvents(){
+  document.querySelectorAll(".day[data-date] .event").forEach(e=>e.remove());
+  const records=[
+    ...seed.map((r,i)=>({...r,_seed:true,_sid:"seed-"+i})),
+    ...extra.map(r=>({...r,_seed:false})),
+    ...cloudRecords.map(r=>({...r,_seed:false,_cloud:true}))
+  ];
+  records.sort((a,b)=>a.date.localeCompare(b.date));
+  for(const r of records){
+    const cell=document.querySelector(`.day[data-date="${r.date}"]`);
+    if(!cell)continue;
+    const e=document.createElement("div");
+    e.className=`event ${baseNames[r.category]?r.category:""}`;
+    e.dataset.cat=r.category;
+    e.dataset.id=r.id||r._sid;
+    const cc=catColor(r.category);
+    if(cc){e.style.background=cc;e.style.color="#111";}
+    if(r._cloud){e.style.boxShadow="inset 0 0 0 1px rgba(17,24,39,.28)";}
+    e.innerHTML=`<span class="etitle">${esc(r.title)}</span>${r.detail?`<span class="detail">${esc(r.detail)}</span>`:""}`;
+    e.addEventListener("click",ev=>{
+      ev.stopPropagation();
+      if(r._seed) openSeed(r);
+      else if(r._cloud){ if(isAdmin()) openCloudEdit(r.id); else openSeed(r); }
+      else openEdit(r.id);
+    });
+    cell.appendChild(e);
+  }
+  applyFilters();
+}
+
+function openNew(date){
+  if(!isAdmin())return;
+  editingId=null;
+  editingSource="cloud";
+  $("editHeading").textContent="新增紀錄";
+  $("dateInput").value=date;
+  $("catInput").value="vomit";
+  $("titleInput").value="";
+  $("detailInput").value="";
+  $("recordMeta").textContent="";
+  $("deleteBtn").style.display="none";
+  $("editWrap").style.display="flex";
+}
+function openEdit(id){
+  const r=extra.find(x=>x.id===id);
+  if(!r)return;
+  editingId=id;
+  editingSource="local";
+  $("editHeading").textContent="修改紀錄";
+  $("dateInput").value=r.date;
+  $("catInput").value=r.category;
+  $("titleInput").value=r.title||"";
+  $("detailInput").value=r.detail||"";
+  const created=r.createdAt?new Date(r.createdAt).toLocaleString("zh-TW"):"舊版紀錄";
+  const modified=r.modifiedAt?new Date(r.modifiedAt).toLocaleString("zh-TW"):"尚未修改";
+  $("recordMeta").textContent=`建立：${created}　｜　最後修改：${modified}`;
+  $("deleteBtn").style.display="block";
+  $("editWrap").style.display="flex";
+}
+function openCloudEdit(id){
+  const r=cloudRecords.find(x=>x.id===id);
+  if(!r)return;
+  editingId=id;editingSource="cloud";
+  $("editHeading").textContent="修改雲端紀錄";
+  $("dateInput").value=r.date;$("catInput").value=r.category;$("titleInput").value=r.title||"";$("detailInput").value=r.detail||"";
+  const created=r.createdAt?new Date(r.createdAt).toLocaleString("zh-TW"):"";
+  const modified=r.modifiedAt?new Date(r.modifiedAt).toLocaleString("zh-TW"):"";
+  $("recordMeta").textContent=`雲端紀錄｜建立：${created}　｜　最後修改：${modified}`;
+  $("deleteBtn").style.display="block";$("editWrap").style.display="flex";
+}
+function openSeed(r){
+  $("viewDate").textContent=r.date.replaceAll("-","/");
+  $("viewTitle").textContent=r.title;
+  $("viewDetail").textContent=r.detail||"無其他補充內容。";
+  const cc=catColor(r.category);
+  const sheet=$("viewWrap").querySelector(".sheet");
+  sheet.className="sheet "+(baseNames[r.category]?r.category:"");
+  if(cc){sheet.style.background=cc;} else sheet.style.background="";
+  $("viewWrap").style.display="flex";
+}
+$("viewClose").onclick=()=>$("viewWrap").style.display="none";
+
+$("saveBtn").onclick=async()=>{
+  const date=$("dateInput").value;const category=$("catInput").value;const title=$("titleInput").value.trim();const detail=$("detailInput").value.trim();
+  if(!date||!title){alert("請填日期與簡短記事");return;}
+  const now=new Date().toISOString();
+  $("saveBtn").disabled=true;$("saveBtn").textContent="儲存中…";
+  try{
+    if(editingSource==="cloud"){
+      if(!isAdmin())throw new Error("not admin");
+      const payload={record_date:date,category,title,detail,updated_at:now};
+      if(editingId) await cloudWrite("PATCH",`records?id=eq.${encodeURIComponent(editingId)}`,payload);
+      else await cloudWrite("POST","records",payload);
+      await loadCloudRecords();
+    }else if(editingId){
+      const idx=extra.findIndex(x=>x.id===editingId);if(idx<0)throw new Error("missing");
+      extra[idx]={...extra[idx],date,category,title,detail,modifiedAt:now};persist();renderCalendar();renderWeights();
+    }
+    $("editWrap").style.display="none";editingId=null;editingSource=null;
+  }catch(e){console.error(e);alert("雲端儲存失敗。請確認仍是管理者登入狀態，再重試。這次內容沒有被刪除。");}
+  finally{$("saveBtn").disabled=false;$("saveBtn").textContent="儲存";}
+};
+$("deleteBtn").onclick=()=>{
+  if(!editingId)return;
+  const r=editingSource==="cloud"?cloudRecords.find(x=>x.id===editingId):extra.find(x=>x.id===editingId);
+  if(!r)return;
+  $("deleteSummary").textContent=`${r.date.replaceAll("-","/")}　${r.title}`;
+  $("deleteWrap").style.display="flex";
+};
+$("deleteCancel").onclick=()=>$("deleteWrap").style.display="none";
+$("deleteConfirm").onclick=async()=>{
+  if(!editingId)return;
+  try{
+    if(editingSource==="cloud"){
+      if(!isAdmin())throw new Error("not admin");
+      await cloudWrite("DELETE",`records?id=eq.${encodeURIComponent(editingId)}`);await loadCloudRecords();
+    }else{extra=extra.filter(x=>x.id!==editingId);persist();renderCalendar();renderWeights();}
+    editingId=null;editingSource=null;$("deleteWrap").style.display="none";$("editWrap").style.display="none";
+  }catch(e){console.error(e);alert("雲端刪除失敗，紀錄仍然保留。");}
+};
+$("cancelEdit").onclick=()=>$("editWrap").style.display="none";
+
+function bindFilters(){
+  document.querySelectorAll("#filters button[data-filter]").forEach(b=>{
+    if(b.dataset.bound)return;b.dataset.bound="1";
+    b.onclick=()=>{
+      const f=b.dataset.filter;
+      if(f==="all")selectedFilters.clear();
+      else if(selectedFilters.has(f))selectedFilters.delete(f);
+      else selectedFilters.add(f);
+      applyFilters();
+    };
+  });
+}
+function applyFilters(){
+  const allBtn=document.querySelector('#filters [data-filter="all"]');
+  const buttons=[...document.querySelectorAll('#filters button[data-filter]:not([data-filter="all"])')];
+  if(selectedFilters.size===0){
+    allBtn?.classList.add("active");
+    buttons.forEach(b=>b.classList.remove("active"));
+    document.querySelectorAll(".event").forEach(e=>e.classList.remove("hidden-by-filter"));
+  }else{
+    allBtn?.classList.remove("active");
+    buttons.forEach(b=>b.classList.toggle("active",selectedFilters.has(b.dataset.filter)));
+    document.querySelectorAll(".event").forEach(e=>e.classList.toggle("hidden-by-filter",!selectedFilters.has(e.dataset.cat)));
+  }
+}
+function renderCustomUI(){
+  Object.keys(baseNames).forEach(id=>{
+    const b=document.querySelector(`#filters [data-filter="${id}"]`);
+    if(b){b.textContent=catName(id);b.style.background=catColor(id);b.style.color="#111";}
+    const o=$("catInput").querySelector(`option[value="${id}"]`);
+    if(o)o.textContent=catName(id);
+  });
+  customCats.forEach(c=>{
+    if(!document.querySelector(`#filters [data-filter="${CSS.escape(c.id)}"]`)){
+      const b=document.createElement("button");b.dataset.filter=c.id;b.textContent=c.name;b.style.background=c.color;b.style.color="#111";
+      $("filters").appendChild(b);
+    }
+    if(!$("catInput").querySelector(`option[value="${CSS.escape(c.id)}"]`)){
+      const o=document.createElement("option");o.value=c.id;o.textContent=c.name;$("catInput").appendChild(o);
+    }
+  });
+  bindFilters();applyFilters();
+}
+function renderCustomList(){
+  const box=$("customList");
+  box.innerHTML="<div class='note' style='margin-bottom:8px'>內建項目可修改名稱與顏色，但不能刪除；自訂項目可修改、改色或刪除。</div>";
+
+  Object.keys(baseNames).forEach(id=>{
+    const row=document.createElement("div");row.className="custom-row";
+    row.innerHTML=`<input class="cat-name-edit" value="${esc(catName(id))}" aria-label="項目名稱"><input type="color" value="${esc(catColor(id))}">`;
+    const nameInput=row.querySelector(".cat-name-edit");
+    const colorInput=row.querySelector('input[type="color"]');
+    nameInput.onchange=()=>{
+      const name=nameInput.value.trim();
+      if(!name){nameInput.value=catName(id);return alert("項目名稱不能空白");}
+      builtinSettings[id]={...(builtinSettings[id]||{}),name};
+      persist();renderCustomUI();renderCalendar();renderWeights();
+    };
+    colorInput.onchange=()=>{
+      builtinSettings[id]={...(builtinSettings[id]||{}),color:colorInput.value};
+      persist();renderCustomUI();renderCalendar();
+    };
+    box.appendChild(row);
+  });
+
+  customCats.forEach(c=>{
+    const row=document.createElement("div");row.className="custom-row";
+    row.innerHTML=`<input class="cat-name-edit" value="${esc(c.name)}" aria-label="項目名稱"><input type="color" value="${esc(c.color)}"><button>刪除</button>`;
+    const nameInput=row.querySelector(".cat-name-edit");
+    const colorInput=row.querySelector('input[type="color"]');
+    nameInput.onchange=()=>{
+      const name=nameInput.value.trim();
+      if(!name){nameInput.value=c.name;return alert("項目名稱不能空白");}
+      c.name=name;persist();renderCustomUI();renderCalendar();
+    };
+    colorInput.onchange=()=>{c.color=colorInput.value;persist();renderCustomUI();renderCalendar();};
+    row.querySelector("button").onclick=()=>{
+      if(confirm("刪除這個自訂項目？既有紀錄不會被刪除。")){
+        customCats=customCats.filter(x=>x.id!==c.id);persist();location.reload();
+      }
+    };
+    box.appendChild(row);
+  });
+}
+$("manageBtn").onclick=()=>{if(!isAdmin())return;renderCustomList();$("manageWrap").style.display="flex"};
+$("manageClose").onclick=()=>$("manageWrap").style.display="none";
+$("newCatSave").onclick=()=>{
+  const n=$("newCatName").value.trim(); if(!n)return alert("請輸入項目名稱");
+  customCats.push({id:"custom-"+Date.now(),name:n,color:$("newCatColor").value});
+  persist();$("newCatName").value="";renderCustomUI();renderCustomList();
+};
+
+function renderWeights(){
+  const all=[...seed,...extra,...cloudRecords].filter(r=>r.category==="weight");
+  const box=$("weights");box.innerHTML="";
+  const pts=all.map(r=>{const m=(r.title||"").match(/(\d+(?:\.\d+)?)/);return m?{d:r.date,v:+m[1]}:null}).filter(Boolean).sort((a,b)=>a.d.localeCompare(b.d));
+  if(!pts.length){box.innerHTML='<div class="note">目前沒有體重紀錄</div>';return;}
+  const vals=pts.map(x=>x.v),min=Math.min(...vals)-.1,max=Math.max(...vals)+.1,range=Math.max(.2,max-min);
+  pts.forEach(p=>{
+    const h=45+((p.v-min)/range)*80;
+    const x=document.createElement("div");x.className="witem";
+    x.innerHTML=`<div class="wval">${p.v.toFixed(1)} kg</div><div class="wbar" style="height:${h}px"></div><div class="wdate">${p.d.slice(5).replace("-","/")}</div>`;
+    box.appendChild(x);
+  });
+}
+
+$("todayBtn").onclick=()=>{
+  const key=monthKey(new Date());
+  const sec=document.getElementById("m-"+key);
+  if(sec)sec.scrollIntoView({behavior:"smooth",block:"start"});
+};
+function updateMonthActive(){
+  const cur=monthKey(new Date());
+  document.querySelectorAll("#monthNav button").forEach(b=>b.classList.toggle("active",b.dataset.month===cur));
+}
+
+$("backupBtn").onclick=()=>$("backupWrap").style.display="flex";
+$("backupClose").onclick=()=>$("backupWrap").style.display="none";
+function dl(blob,name){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
+function stamp(){return ymd(new Date())}
+$("exportJson").onclick=()=>{
+  const payload={version:VERSION,exportedAt:new Date().toISOString(),addedRecords:extra,customCategories:customCats,builtinCategorySettings:builtinSettings};
+  dl(new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}),`小安健康日曆備份_${stamp()}.json`);
+};
+$("exportCsv").onclick=()=>{
+  const names={};Object.keys(baseNames).forEach(id=>names[id]=catName(id));customCats.forEach(c=>names[c.id]=c.name);
+  const csvEsc=v=>`"${String(v??"").replaceAll('"','""')}"`;
+  const rows=[["日期","項目","內容","詳細說明"],...[...seed,...extra,...cloudRecords].sort((a,b)=>a.date.localeCompare(b.date)).map(r=>[r.date,names[r.category]||r.category,r.title,r.detail])];
+  const csv="\ufeff"+rows.map(r=>r.map(csvEsc).join(",")).join("\r\n");
+  dl(new Blob([csv],{type:"text/csv;charset=utf-8"}),`小安健康紀錄_${stamp()}.csv`);
+};
+$("importJson").onchange=async()=>{
+  const f=$("importJson").files[0];if(!f)return;
+  try{
+    const x=JSON.parse(await f.text());
+    if(!Array.isArray(x.addedRecords)||!Array.isArray(x.customCategories))throw new Error("format");
+    const count=x.addedRecords.length, cats=x.customCategories.length;
+    if(!confirm(`備份內容：${count} 筆自行新增紀錄、${cats} 個自訂項目。\n\n確定以這份備份取代目前自行新增的資料？`))return;
+    extra=x.addedRecords;customCats=x.customCategories;builtinSettings=x.builtinCategorySettings||{};persist();
+    alert("還原完成，將重新整理。");location.reload();
+  }catch(e){alert("無法讀取這份備份檔。")}
+  $("importJson").value="";
+};
+
+async function loadCloudRecords(){
+  const status=$("cloudStatus");
+  try{
+    const url=`${SUPABASE_URL}/rest/v1/records?select=id,record_date,category,title,detail,weight,created_at,updated_at&order=record_date.asc,created_at.asc`;
+    const res=await fetch(url,{headers:{apikey:SUPABASE_PUBLISHABLE_KEY}});
+    if(!res.ok)throw new Error(`HTTP ${res.status}`);
+    const rows=await res.json();
+    const cloudCatMap={"嘔吐":"vomit","飲食":"food","體重":"weight","VET":"vet","看獸醫":"vet","點藥":"deworm","吃藥":"med","貓砂":"litter","其他":"other"};
+    cloudRecords=rows.map(r=>({
+      id:r.id,
+      date:r.record_date,
+      category:cloudCatMap[r.category]||r.category,
+      title:r.title||"",
+      detail:r.detail||"",
+      weight:r.weight,
+      createdAt:r.created_at,
+      modifiedAt:r.updated_at
+    }));
+    status.textContent=`雲端：已連線｜${cloudRecords.length} 筆雲端紀錄`;
+    renderCalendar();
+    renderWeights();
+  }catch(err){
+    console.error("Supabase read failed",err);
+    status.textContent="雲端：讀取失敗｜本機資料仍可正常使用";
+  }
+}
+
+$("authBtn").onclick=()=>{
+  const on=isAdmin();$("authHeading").textContent=on?"管理者模式":"管理者登入";
+  $("loginFields").style.display=on?"none":"block";$("loginBtn").style.display=on?"none":"block";$("logoutBtn").style.display=on?"block":"none";$("authWrap").style.display="flex";
+};
+$("authClose").onclick=()=>$("authWrap").style.display="none";
+$("loginBtn").onclick=async()=>{
+  const email=$("loginEmail").value.trim(),password=$("loginPassword").value;if(!email||!password)return alert("請輸入 Email 與密碼");
+  $("loginBtn").disabled=true;$("loginBtn").textContent="登入中…";
+  try{
+    const res=await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`,{method:"POST",headers:{apikey:SUPABASE_PUBLISHABLE_KEY,"Content-Type":"application/json"},body:JSON.stringify({email,password})});
+    if(!res.ok)throw new Error(await res.text());const x=await res.json();adminSession={...x,expires_at:Date.now()+((x.expires_in||3600)*1000)};saveSession();updateAdminUI();$("loginPassword").value="";$("authWrap").style.display="none";
+  }catch(e){console.error(e);alert("登入失敗。請確認 Email 與密碼是否正確。");}
+  finally{$("loginBtn").disabled=false;$("loginBtn").textContent="登入";}
+};
+$("logoutBtn").onclick=async()=>{
+  try{const token=adminSession?.access_token;if(token)await fetch(`${SUPABASE_URL}/auth/v1/logout`,{method:"POST",headers:{apikey:SUPABASE_PUBLISHABLE_KEY,Authorization:`Bearer ${token}`}});}catch(e){}
+  adminSession=null;saveSession();updateAdminUI();$("authWrap").style.display="none";
+};
+updateAdminUI();
+
+renderCalendar();
+renderCustomUI();
+renderWeights();
+loadCloudRecords();
+
+/* 開啟時自動定位目前月份 */
+setTimeout(()=>{
+  const sec=document.getElementById("m-"+monthKey(new Date()));
+  if(sec)sec.scrollIntoView({block:"start"});
+},100);
+
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())).catch(()=>{});
+}
+if("caches" in window){
+  caches.keys().then(keys=>keys.filter(k=>k.startsWith("xiaoan-health")).forEach(k=>caches.delete(k))).catch(()=>{});
+}
+</script>
+</body>
+</html>
