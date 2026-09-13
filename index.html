@@ -4,11 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>小安健康日曆</title>
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
-<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-<link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#f4f5f7">
 <style>
 :root{
   --bg:#f4f5f7;--ink:#202124;--muted:#667085;--line:#dfe3e8;
@@ -18,8 +13,8 @@
   --litter:#fde68a;--litter-ink:#713f12;--other:#e5e7eb;--other-ink:#4b5563
 }
 *{box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{margin:0;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"PingFang TC",sans-serif;color:var(--ink)}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"PingFang TC",sans-serif;color:var(--ink);-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .wrap{max-width:920px;margin:auto;padding:14px 8px 80px}
 .top{position:sticky;top:0;background:rgba(244,245,247,.97);backdrop-filter:blur(12px);z-index:10;padding-bottom:8px}
 h1{font-size:28px;margin:6px 2px 8px}
@@ -88,7 +83,6 @@ input[type="color"]{height:48px;padding:4px}
       <button id="authBtn">管理登入</button>
     </div>
     <div class="cloud-status" id="cloudStatus">雲端：連線中…</div>
-    <div class="cloud-status" id="modeStatus">模式：唯讀</div>
     <div class="nav" id="monthNav"></div>
     <div class="filters" id="filters">
       <button data-filter="all" class="active">全部</button>
@@ -246,7 +240,6 @@ function saveSession(){
 function updateAdminUI(){
   const on=isAdmin();
   $("authBtn").textContent=on?"管理者已登入":"管理登入";
-  $("modeStatus").textContent=on?"模式：管理者｜可新增・修改・刪除":"模式：唯讀｜家人／獸醫可直接查看";
   $("manageBtn").style.display=on?"":"none";
 }
 async function refreshSession(){
