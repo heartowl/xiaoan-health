@@ -3,7 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<script>
+(function(){
+  const ua=navigator.userAgent||"";
+  const isIOS=/iPhone|iPad|iPod/.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+  const standalone=(window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches)||navigator.standalone===true;
+  if(isIOS&&standalone)document.documentElement.classList.add("ios-standalone");
+})();
+</script>
 <title>小安健康日曆</title>
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#f4f5f7">
 <style>
 :root{
   --bg:#f4f5f7;--ink:#202124;--muted:#667085;--line:#dfe3e8;
@@ -70,6 +83,26 @@ input[type="color"]{height:48px;padding:4px}
 .cat-name-edit{flex:1;min-width:0;padding:9px 10px;font-size:15px}
 .custom-row input[type="color"]{width:48px;flex:0 0 48px}
 .custom-row button{border:0;border-radius:9px;padding:8px 10px}
+
+/* iPhone/iPad 主畫面 Web App：只縮小文字與按鈕內距，Chrome／Android 不受影響 */
+html.ios-standalone h1{font-size:22px}
+html.ios-standalone .nav button,
+html.ios-standalone .filters button,
+html.ios-standalone .toolbar button{font-size:11px;padding:7px 9px}
+html.ios-standalone .cloud-status{font-size:9.5px}
+html.ios-standalone .month h2{font-size:17px}
+html.ios-standalone .weekdays div{font-size:11px}
+html.ios-standalone .date{font-size:11px}
+html.ios-standalone .event{font-size:9.5px;padding:4px}
+html.ios-standalone .wval{font-size:10px}
+html.ios-standalone .wdate{font-size:9px}
+html.ios-standalone .fieldlabel{font-size:11px}
+html.ios-standalone input,
+html.ios-standalone select,
+html.ios-standalone textarea{font-size:13px}
+html.ios-standalone .actions button{font-size:12px}
+html.ios-standalone .note,
+html.ios-standalone .record-meta{font-size:10px}
 </style>
 </head>
 <body>
